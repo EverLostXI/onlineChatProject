@@ -1,0 +1,4 @@
+D:/TempProject/build/CMakeFiles/chat_server.dir
+D:/TempProject/build/CMakeFiles/chat_client.dir
+D:/TempProject/build/CMakeFiles/edit_cache.dir
+D:/TempProject/build/CMakeFiles/rebuild_cache.dir

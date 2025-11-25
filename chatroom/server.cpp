@@ -144,8 +144,6 @@ public:
     // 认证状态
     string username;
     bool is_authenticated;
-    // 最后收到心跳时间
-    time_t last_heartbeat_time;
 
 public:
     // 构造函数：初始化用户属性
@@ -154,8 +152,7 @@ public:
         client_ip(ip), 
         client_port(port), 
         username(""), // 初始为空
-        is_authenticated(false), // 初始未认证
-        last_heartbeat_time(time(nullptr)) // 初始化心跳时间
+        is_authenticated(false) // 初始未认证
     { // 向日志中记录用户连接
         string logmessage = "客户端连接: IP = " + client_ip + ", 端口 = " + to_string(client_port);
         WriteLog(LogLevel::INFO_LEVEL, logmessage);
@@ -190,12 +187,21 @@ map<string, ClientSession> g_userSessions = {
 };
 
 
+// 验证登录凭证函数
+bool AuthenticateCredential(const string &inputUsername, const string &inputPassword) {
+    if (g_userCredentials.count(inputUsername)) { // 检查map中是否存有该用户名
+        if (g_userCredentials[inputUsername] == inputPassword) { // 如果存在，比较密码
+            return true;
+        }
+    }
+    return false;
+}
+
 
 // 工作线程入口函数：为每个客户端分配独立线程处理消息
-void HandleClient(ClientSession* sessionPtr) { 
-    // 这个会话指针作为一个客户端在内存中的唯一代表
+void HandleClient(ClientSession* sessionPtr) { // 这个会话指针（sessionPtr)作为一个客户端在内存中的唯一代表
     SOCKET clientSocket = sessionPtr->socket_fd;
-    string clientInfo = sessionPtr->client_ip + ":" + to_string(sessionPtr->client_port);
+    string clientInfo = sessionPtr->client_ip + ":" + to_string(sessionPtr->client_port); // 读取这个连接的ip和端口
     
     WriteLog(LogLevel::DEBUG_LEVEL, "客户端处理线程启动: " + clientInfo);
     
@@ -210,10 +216,8 @@ void HandleClient(ClientSession* sessionPtr) {
             break;
         }
         
-        // 更新最后心跳时间
-        sessionPtr->last_heartbeat_time = time(nullptr);
         
-        // 根据消息类型分发处理
+        // 根据消息类型分别处理
         switch (receivedPacket.type()) {
             case MsgType::LoginReq: { // 登录请求
                 // 读取用户名和密码
@@ -222,8 +226,8 @@ void HandleClient(ClientSession* sessionPtr) {
                 
                 WriteLog(LogLevel::INFO_LEVEL, "登录请求 - 用户名: " + username + ", 来源: " + clientInfo);
                 
-                // 验证登录凭证（这里简化处理，实际应查询g_userCredentials）
-                bool authSuccess = true; // TODO: 调用 AuthenticateCredential 验证
+                // 验证登录凭证
+                bool authSuccess = AuthenticateCredential(username, password); // TODO: 调用 AuthenticateCredential 验证
                 
                 // 构造响应包
                 Packet response(MsgType::LoginReq);
@@ -248,9 +252,20 @@ void HandleClient(ClientSession* sessionPtr) {
                 
                 WriteLog(LogLevel::INFO_LEVEL, "创建账号请求 - 用户名: " + username);
                 
-                // TODO: 检查用户名是否已存在，创建新账号
+                // 检查用户名是否已存在
                 Packet response(MsgType::CreateAcc);
-                response.writeStr("账号创建成功");
+                if (g_userCredentials.count(username)) {
+                    response.writeStr("failed");
+                    response.writeStr("用户名已存在");
+                    WriteLog(LogLevel::WARN_LEVEL, "账号创建失败：用户名已存在 - " + username);
+                } else {
+                    g_userCredentials[username] = password;
+                    response.writeStr("success");
+                    response.writeStr("账号创建成功");
+                    WriteLog(LogLevel::INFO_LEVEL, "账号创建成功 - 用户名: " + username);
+                }
+
+                // 发送响应包
                 response.finish();
                 send(clientSocket, response.data(), response.size(), 0);
                 break;
@@ -321,16 +336,6 @@ void HandleClient(ClientSession* sessionPtr) {
 }
 // 注：消息封装和解包功能已由 chatMsg.hpp 中的 Packet 类实现
 // Packet 类提供了更完善的消息封装、网络字节序转换、以及接收功能
-
-// 验证登录凭证函数
-bool AuthenticateCredential(const string &inputUsername, const string &inputPassword) {
-    if (g_userCredentials.count(inputUsername)) { // 检查map中是否存有该用户名
-        if (g_userCredentials[inputUsername] == inputPassword) { // 如果存在，比较密码
-            return true;
-        }
-    }
-    return false;
-}
 
 
 int main() {

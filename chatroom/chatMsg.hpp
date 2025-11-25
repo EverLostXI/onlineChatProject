@@ -80,7 +80,7 @@ public:
     const char* data() const { return reinterpret_cast<const char*>(&hdr); }
     
     /* 获取序列化后的数据总长度 */
-    size_t      size() const { return sizeof(hdr) + hdr.extLen + hdr.bodyLen; }
+    size_t size() const { return sizeof(hdr) + hdr.extLen + hdr.bodyLen; }
 
     /* 从socket阻塞接收一个完整数据包 */
     bool recvFrom(SOCKET s)

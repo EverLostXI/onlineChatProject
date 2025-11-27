@@ -16,13 +16,15 @@ inline uint32_t n2h32(uint32_t v){ return qFromBigEndian(v); }
 // 消息类型枚举
 enum class MsgType : uint8_t
 {
-    LoginReq    = 0x01,  // 登录请求
-    CreateAcc   = 0x02,  // 创建账号
-    CreateGrope = 0x03,   //创建群聊
-    Loginreturn = 0x04, //登录反馈
-    regireturn = 0x05, //注册反馈
-    NormalMsg   = 0x10   // 普通消息
-
+    LoginReq     = 0x01,  // 登录请求
+    CreateAcc    = 0x02,  // 创建账号
+    CreateGrope  = 0x03,  // 创建群聊请求
+    Loginreturn  = 0x04,  // 登录反馈
+    regireturn   = 0x05,  // 注册反馈
+    CreateGroRe  = 0x06,  // [新增] 创建群聊反馈
+    AddFriendReq = 0x07,  // [新增] 添加好友请求
+    AddFriendRe  = 0x08,  // [新增] 添加好友反馈
+    NormalMsg    = 0x10   // 普通消息
 };
 
 #pragma pack(push,1)
@@ -113,10 +115,6 @@ public:
     {
         Packet p(MsgType::LoginReq);
         p.hdr.sendid = user;
-
-        //下一行为测试用
-        //p.hdr.recvid = 0xAA; // <--- 临时加上这一行，给一个特殊的值
-
         p.writeField2(pwd);
         p.finish();
         return p;
@@ -131,11 +129,26 @@ public:
         p.finish();
         return p;
     }
-    /* 方法：创建群聊 */
-    static Packet makeCreGro(std::vector<uint8_t>& idlist)//使用getfield1（）获得数据
+    /* 方法：创建群聊 (修改版) */
+    // 参数：idlist - 成员ID列表, groupName - 群聊名称
+    static Packet makeCreGro(std::vector<uint8_t>& idlist, const std::string& groupName)
     {
         Packet p(MsgType::CreateGrope);
-        p.writeFieldRaw(p.field1, idlist.data(),idlist.size());
+        // Field 1: 存放成员ID列表 (二进制数据)
+        p.writeFieldRaw(p.field1, idlist.data(), idlist.size());
+        // Field 2: 存放群聊名称 (字符串)
+        p.writeField2(groupName);
+        p.finish();
+        return p;
+    }
+
+    /* 方法：添加好友请求 (新增) */
+    static Packet makeAddFriend(uint8_t sendId, uint8_t targetId)
+    {
+        Packet p(MsgType::AddFriendReq);
+        p.hdr.sendid = sendId;   // 发起请求的人
+        p.hdr.recvid = targetId; // 被请求的人
+        // 如果需要附带验证消息，可以用 writeField1("我是xxx");
         p.finish();
         return p;
     }
@@ -156,6 +169,28 @@ public:
         p.finish();
         return p;
     }
+
+    /* 方法：创建群聊反馈 (新增) */
+    static Packet makeCreGroRe(bool s)
+    {
+        Packet p(MsgType::CreateGroRe);
+        p.hdr.success = s;
+        // 如果成功，将来可以在 field1 放新群的ID
+        p.finish();
+        return p;
+    }
+
+    /* 方法：添加好友反馈 (新增) */
+    static Packet makeAddFriendRe(uint8_t sendId, uint8_t targetId, bool s)
+    {
+        Packet p(MsgType::AddFriendRe);
+        p.hdr.sendid = sendId;   // 这里sendId是最初发起请求的人
+        p.hdr.recvid = targetId; // 这里recvid通常是做出响应的人（被添加者）
+        p.hdr.success = s;
+        p.finish();
+        return p;
+    }
+
     //通用
     /* 方法：创建聊天消息包 */
     static Packet Message(     uint8_t Sendid, 

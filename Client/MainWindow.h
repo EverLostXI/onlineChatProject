@@ -27,6 +27,8 @@ private slots:
     void on_addFriendButton_clicked();
     void on_createGroupButton_clicked();
 
+    void onAutoAcceptFriendRequest(uint8_t requesterId); // [新增]
+
 private:
     Ui::MainWindow *ui;
     // ...

@@ -18,6 +18,13 @@ public:
     void sendLoginRequest(uint8_t userId, const std::string& password);
     void sendRegisterRequest(uint8_t userId, const std::string& password);
 
+    // [新增] 发送添加好友请求的公共接口
+    void sendAddFriendRequest(uint8_t selfId, uint8_t friendId);
+    // [新增] 添加下面这一行，你的 MainWindow.cpp 正是想调用它！
+    void sendAddFriendResponse(uint8_t originalRequesterId, uint8_t selfId, bool accepted);
+
+    static uint8_t selfId();
+
 signals:
     // 信号：通知UI网络事件的结果
     void connected();
@@ -26,6 +33,11 @@ signals:
     void loginFailed();
     void registrationSuccess();
     void registrationFailed();
+    // [新增] 添加好友结果的信号
+    // 参数: success - 是否成功, friendId - 尝试添加的好友ID
+    void addFriendResult(bool success, uint8_t friendId);
+    void autoAcceptFriendRequest(uint8_t requesterId); // [新增] 自动同意好友请求信号
+
 
     void requestTimeout(); // <--- 2. 添加一个新的信号，用于通知UI请求超时
 
@@ -37,6 +49,7 @@ private slots:
     void onReadyRead(); // 核心：当收到服务器数据时被调用
 
     void onRequestTimeout(); // <--- 3. 添加一个新的槽函数，用于处理定时器超时事件
+
 
 public slots:
     // 添加一个新的槽，用来接收UI的注册请求

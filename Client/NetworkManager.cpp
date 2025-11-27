@@ -67,6 +67,23 @@ void NetworkManager::sendRegisterRequest(uint8_t userId, const std::string& pass
     m_requestTimer->start(10000);
 }
 
+// [新增] 实现发送添加好友请求的函数
+void NetworkManager::sendAddFriendRequest(uint8_t selfId, uint8_t friendId)
+{
+    if (m_socket->state() != QAbstractSocket::ConnectedState) {
+        qDebug() << "Cannot send add friend request: not connected.";
+        // 直接通过信号反馈失败
+        emit addFriendResult(false, friendId);
+        return;
+    }
+    Packet p = Packet::makeAddFriend(selfId, friendId);
+    p.sendTo(m_socket);
+    qDebug() << "Sent add friend request from" << selfId << "to" << friendId;
+
+    // 同样可以为这个请求启动超时定时器
+    m_requestTimer->start(10000); // 10秒超时
+}
+
 // --- 槽函数实现 ---
 void NetworkManager::onConnected()
 {
@@ -149,6 +166,22 @@ void NetworkManager::onReadyRead()
                 break;
 
             // ... 处理其他类型的消息
+
+                // [新增] 处理添加好友的反馈
+            case MsgType::AddFriendRe:
+            {
+                qDebug() << "Received add friend response.";
+                // 根据你的协议，响应包的 sendid 是最初发起请求的人，recvid 是被添加的人
+                // 但为了UI方便，我们更关心是哪个好友的请求有了结果，这里我们用recvid
+                // **注意**：请根据你的服务器实现来确定哪个字段是目标好友ID。
+                // 我这里的代码假设 recvid 是我们尝试添加的好友ID。
+                // 根据你的截图，p.hdr.recvid 是被添加者，p.hdr.sendid是请求者。
+                // 所以，响应包里，recvid 应该是我们自己，sendid 才是我们添加的好友。
+                uint8_t friendId = receivedPacket.getsendid();
+                emit addFriendResult(receivedPacket.success(), friendId);
+                break;
+            }
+
             default:
                 qDebug() << "Received unknown message type:" << static_cast<int>(receivedPacket.type());
                 break;

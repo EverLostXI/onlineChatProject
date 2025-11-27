@@ -18,6 +18,9 @@ public:
     void sendLoginRequest(uint8_t userId, const std::string& password);
     void sendRegisterRequest(uint8_t userId, const std::string& password);
 
+    // [新增] 发送添加好友请求的公共接口
+    void sendAddFriendRequest(uint8_t selfId, uint8_t friendId);
+
 signals:
     // 信号：通知UI网络事件的结果
     void connected();
@@ -26,6 +29,9 @@ signals:
     void loginFailed();
     void registrationSuccess();
     void registrationFailed();
+    // [新增] 添加好友结果的信号
+    // 参数: success - 是否成功, friendId - 尝试添加的好友ID
+    void addFriendResult(bool success, uint8_t friendId);
 
     void requestTimeout(); // <--- 2. 添加一个新的信号，用于通知UI请求超时
 

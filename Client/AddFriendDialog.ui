@@ -57,22 +57,6 @@
  <connections>
   <connection>
    <sender>buttonBox</sender>
-   <signal>accepted()</signal>
-   <receiver>AddFriendDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>76</x>
-     <y>225</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>40</x>
-     <y>147</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>buttonBox</sender>
    <signal>rejected()</signal>
    <receiver>AddFriendDialog</receiver>
    <slot>reject()</slot>

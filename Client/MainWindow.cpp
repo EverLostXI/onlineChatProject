@@ -41,23 +41,28 @@ void MainWindow::on_conversationListWidget_itemClicked(QListWidgetItem *item)
     (void)item;
 }
 
-void MainWindow::on_addFriendButton_clicked()
+void MainWindow::on_addFriendButton_clicked() // 假设你的按钮槽函数是这个名字
 {
     AddFriendDialog dialog(this);
-    // dialog.exec() 会阻塞程序，直到对话框关闭
-    // 如果用户点击 OK，exec() 返回 QDialog::Accepted
+
+    // dialog.exec() 会显示对话框并等待它关闭
+    // 如果我们在对话框内部调用了 accept(), exec() 会返回 QDialog::Accepted
     if (dialog.exec() == QDialog::Accepted) {
-        int friendId = dialog.getFriendId();
+        // 1. 如果添加成功，就从对话框获取新好友的ID
+        int newFriendId = dialog.getAddedFriendId();
 
-        // 为了测试，我们给新好友一个默认名字
-        QString friendName = QString("新好友%1").arg(friendId);
+        // 2. 检查ID是否有效，并更新本地好友列表
+        if (newFriendId != -1 && !m_friends.contains(newFriendId)) {
+            // 为了显示，我们先给一个默认名字
+            QString newFriendName = QString("好友 %1").arg(newFriendId);
+            m_friends[newFriendId] = newFriendName;
 
-        // 更新我们的“本地数据库”
-        m_friends[friendId] = friendName;
+            // 3. 刷新界面上的好友列表
+            updateConversationList();
 
-        // 刷新主界面列表，立即看到变化！
-        updateConversationList();
+        }
     }
+    // 如果用户点击了 "Cancel" 或者添加失败后关闭了窗口，exec() 会返回 Rejected，我们什么都不做
 }
 
 void MainWindow::on_createGroupButton_clicked()
